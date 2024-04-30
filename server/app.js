@@ -32,9 +32,11 @@ app.post("/register", (req, res) => {
     [username, password],
     (error, result) => {
       console.log("error in database: ", error);
+      if (!error) {
+        res.send("inserted to the database successfully");
+      }
     }
   );
-  res.send("inserted to the database successfully");
 });
 
 // route handler for login
