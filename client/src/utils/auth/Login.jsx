@@ -11,11 +11,11 @@ const Login = () => {
     // post request
     Axios.post("http://localhost:3000/login", { username, password })
       .then((res) => {
-        console.log(res);
-        if (res.data.length > 0) {
-          setLoginStatus(res.data[0].username);
-        } else {
+        console.log(res.data);
+        if (res.data.message || res.data.err) {
           setLoginStatus(res.data.message || res.data.err);
+        } else {
+          setLoginStatus(res.data[0].username);
         }
       })
       .catch((e) => {

@@ -1,7 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const app = express();
 
+// bcrypt setup
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+
+const app = express();
 app.use(cors());
 // we need to use express.json() in order to work with object passed from frontend in route handler
 app.use(express.json());
@@ -27,16 +31,21 @@ app.post("/register", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
   // inserting into table in database
-  db.query(
-    "INSERT INTO users (username, password) VALUES(?, ?)",
-    [username, password],
-    (error, result) => {
-      console.log("error in database: ", error);
-      if (!error) {
-        res.send("inserted to the database successfully");
+  bcrypt.hash(password, saltRounds, function (err, hash) {
+    // Store hash in your password DB.
+    db.query(
+      "INSERT INTO users (username, password) VALUES(?, ?)",
+      [username, hash],
+      (error, result) => {
+        if (!error) {
+          res.send("inserted to the database successfully");
+        } else {
+          console.log("error in database: ", error);
+          res.send({ err: error });
+        }
       }
-    }
-  );
+    );
+  });
 });
 
 // route handler for login
@@ -45,8 +54,8 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
   // selecting from table in database
   db.query(
-    "SELECT * FROM users WHERE  username=? AND password=?",
-    [username, password],
+    "SELECT * FROM users WHERE  username=?",
+    username,
     (error, result) => {
       // if there is a database error
       if (error) {
@@ -55,11 +64,25 @@ app.post("/login", (req, res) => {
 
       // if user is found
       if (result.length > 0) {
-        res.send(result);
+        // compare passwords
+        bcrypt.compare(
+          password,
+          result[0].password,
+          function (err, bcryptResult) {
+            // result == true
+            if (bcryptResult) {
+              console.log("password matches");
+              res.send(result);
+            } else {
+              console.log("password didnt match");
+              res.send({ message: "wrong password" });
+            }
+          }
+        );
       }
       // if no user found with given credentials
       else {
-        res.send({ message: "Invalid Username or Password" });
+        res.send({ message: "Username dont exist" });
       }
     }
   );

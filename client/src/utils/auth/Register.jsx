@@ -10,7 +10,8 @@ const Register = () => {
     // post request
     Axios.post("http://localhost:3000/register", { username, password })
       .then((res) => {
-        console.log(res);
+        console.log(res?.data ?? "response data not found");
+        alert(res?.data ?? "response data not found");
       })
       .catch((e) => {
         console.log("error in axios: ", e);
