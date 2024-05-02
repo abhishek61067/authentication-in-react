@@ -15,14 +15,13 @@ const whitelist = ["http://localhost:5173", "http://example2.com"];
 
 // configuring cors option
 const corsOption = {
-  // origin: function (origin, callback) {
-  //   if (whitelist.indexOf(origin) !== -1 || !origin) {
-  //     callback(null, true);
-  //   } else {
-  //     callback(new Error("Not allowed by CORS"));
-  //   }
-  // },
-  origin: ["http://localhost:5173"],
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   // optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204,
   methods: ["GET", "PUT", "POST"],
   credentials: true,
@@ -33,7 +32,7 @@ const sessionOption = {
   key: "userId",
   secret: "keyboard",
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   cookie: {
     expires: 1000 * 60 * 5, // 5 min
   },
