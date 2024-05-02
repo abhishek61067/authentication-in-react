@@ -1,12 +1,59 @@
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const bodyParser = require("body-parser");
+const session = require("express-session");
 
 // bcrypt setup
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
 const app = express();
-app.use(cors());
+
+// whilelisted origins
+const whitelist = ["http://localhost:5173", "http://example2.com"];
+
+// configuring cors option
+const corsOption = {
+  // origin: function (origin, callback) {
+  //   if (whitelist.indexOf(origin) !== -1 || !origin) {
+  //     callback(null, true);
+  //   } else {
+  //     callback(new Error("Not allowed by CORS"));
+  //   }
+  // },
+  origin: ["http://localhost:5173"],
+  // optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204,
+  methods: ["GET", "PUT", "POST"],
+  credentials: true,
+};
+
+// configuring session option
+const sessionOption = {
+  key: "userId",
+  secret: "keyboard",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    expires: 1000 * 60 * 5, // 5 min
+  },
+};
+
+app.use(cors(corsOption));
+
+// cookie-parser
+app.use(cookieParser());
+
+// body-parser
+// parse application/json
+app.use(bodyParser.json());
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// creating session
+app.use(session(sessionOption));
+
 // we need to use express.json() in order to work with object passed from frontend in route handler
 app.use(express.json());
 const mysql = require("mysql");
@@ -48,7 +95,16 @@ app.post("/register", (req, res) => {
   });
 });
 
-// route handler for login
+// get route handler for login
+app.get("/login", (req, res) => {
+  if (req.session.user) {
+    res.send({ loggedIn: true, user: req.session.user });
+  } else {
+    res.send({ loggedIn: false });
+  }
+});
+
+// post route handler for login
 app.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
@@ -71,6 +127,8 @@ app.post("/login", (req, res) => {
           function (err, bcryptResult) {
             // result == true
             if (bcryptResult) {
+              req.session.user = result;
+              console.log("req.session.user: ", req?.session?.user);
               console.log("password matches");
               res.send(result);
             } else {

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Axios from "axios";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginStatus, setLoginStatus] = useState("");
+  Axios.defaults.withCredentials = true;
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -22,6 +23,16 @@ const Login = () => {
         console.log("error in axios: ", e);
       });
   };
+
+  useEffect(() => {
+    Axios.get("http://localhost:3000/login")
+      .then((response) => {
+        if (response.data.loggedIn) {
+          setLoginStatus(response.data.user[0].username);
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   return (
     <div>
