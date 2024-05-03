@@ -153,8 +153,8 @@ app.post("/login", (req, res) => {
               const token = jwt.sign({ id }, secretKey, {
                 expiresIn: 300,
               });
-              // req.session.user = result;
-              // console.log("req.session.user: ", req?.session?.user);
+              req.session.user = result;
+              console.log("req.session.user: ", req?.session?.user);
               console.log("password matches");
               res.json({
                 auth: true,

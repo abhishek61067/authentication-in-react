@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Axios from "axios";
-// Axios.defaults.withCredentials = true;
+Axios.defaults.withCredentials = true;
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -32,9 +32,20 @@ const Login = () => {
         token: localStorage.getItem("token"),
       },
     })
-      .then((res) => console.log("user authenticated: ", res.data))
+      .then((res) => console.log("user authentication status: ", res.data))
       .catch((e) => console.log("error in axios:", e));
   };
+
+  useEffect(() => {
+    // to check if the browser has the session credential
+    Axios.get("http://localhost:3000/login")
+      .then((response) => {
+        if (response.data.loggedIn) {
+          setLoginStatus(true);
+        }
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   return (
     <div>
