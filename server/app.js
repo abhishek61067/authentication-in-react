@@ -3,7 +3,10 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const session = require("express-session");
+const jwt = require("jsonwebtoken");
 
+//secret key
+const secretKey = "jwtsecret";
 // bcrypt setup
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
@@ -27,21 +30,21 @@ const corsOption = {
   credentials: true,
 };
 
+app.use(cors(corsOption));
+
 // configuring session option
 const sessionOption = {
   key: "userId",
   secret: "keyboard",
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
-    expires: 1000 * 60 * 5, // 5 min
+    expires: 1000 * 60 * 5, // 15 seconds
   },
 };
 
-app.use(cors(corsOption));
-
 // cookie-parser
-app.use(cookieParser());
+app.use(cookieParser([]));
 
 // body-parser
 // parse application/json
@@ -67,11 +70,6 @@ const db = mysql.createConnection({
   database: "react-authentication",
 });
 
-// route handlers
-app.get("/users", (req, res) => {
-  res.send("Users!");
-});
-
 // route handler for register
 app.post("/register", (req, res) => {
   const username = req.body.username;
@@ -94,6 +92,30 @@ app.post("/register", (req, res) => {
   });
 });
 
+// verifying jwt
+const verifyJWT = (req, res, next) => {
+  const token = req.headers["x-access-token"];
+  if (!token) {
+    res.send("We need token to authenticate");
+  } else {
+    // validating token
+    jwt.verify(token, secretKey, (err, decoded) => {
+      if (err) {
+        res.json({ auth: false, message: "Invalid token" });
+      } else {
+        console.log("token validated");
+        req.userId = decoded.id;
+        next();
+      }
+    });
+  }
+};
+
+// route handler to check if user is authenticated using JWT
+app.get("/isAuth", verifyJWT, (req, res) => {
+  res.send("User Authenticated");
+});
+
 // get route handler for login
 app.get("/login", (req, res) => {
   if (req.session.user) {
@@ -114,7 +136,7 @@ app.post("/login", (req, res) => {
     (error, result) => {
       // if there is a database error
       if (error) {
-        res.send({ err: error });
+        res.json({ auth: false, err: error });
       }
 
       // if user is found
@@ -126,20 +148,27 @@ app.post("/login", (req, res) => {
           function (err, bcryptResult) {
             // result == true
             if (bcryptResult) {
+              const id = result[0].userId;
+              const token = jwt.sign({ id }, secretKey, {
+                expiresIn: "300",
+              });
               req.session.user = result;
               console.log("req.session.user: ", req?.session?.user);
               console.log("password matches");
-              res.send(result);
+              res.json({
+                auth: true,
+                token,
+                result,
+              });
             } else {
-              console.log("password didnt match");
-              res.send({ message: "wrong password" });
+              res.json({ auth: false, message: "wrong password" });
             }
           }
         );
       }
       // if no user found with given credentials
       else {
-        res.send({ message: "Username dont exist" });
+        res.json({ auth: false, message: "Username dont exist" });
       }
     }
   );

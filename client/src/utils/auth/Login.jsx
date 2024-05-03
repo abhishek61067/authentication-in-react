@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import Axios from "axios";
+Axios.defaults.withCredentials = true;
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loginStatus, setLoginStatus] = useState("");
-  Axios.defaults.withCredentials = true;
+  const [loginStatus, setLoginStatus] = useState(false);
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
@@ -13,15 +13,27 @@ const Login = () => {
     Axios.post("http://localhost:3000/login", { username, password })
       .then((res) => {
         console.log(res.data);
-        if (res.data.message || res.data.err) {
-          setLoginStatus(res.data.message || res.data.err);
+        if (!res.data.auth) {
+          setLoginStatus(false);
         } else {
-          setLoginStatus(res.data[0].username);
+          setLoginStatus(true);
+          localStorage.setItem("token", res.data.token);
         }
       })
       .catch((e) => {
         console.log("error in axios: ", e);
       });
+  };
+
+  const userAuthenticated = () => {
+    console.log("user authenticated btn clicked");
+    Axios.get("http://localhost:3000/isAuth", {
+      headers: {
+        "x-access-token": localStorage.getItem("token"),
+      },
+    })
+      .then((res) => console.log(res.data))
+      .catch((e) => console.log("error in axios:", e));
   };
 
   useEffect(() => {
@@ -65,7 +77,9 @@ const Login = () => {
         <input type="submit" />
         <br />
         <br />
-        <h2>{loginStatus}</h2>
+        {loginStatus && (
+          <button onClick={userAuthenticated}>User Authenticated</button>
+        )}
       </form>
     </div>
   );
