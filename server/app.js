@@ -94,10 +94,11 @@ app.post("/register", (req, res) => {
 
 // verifying jwt
 const verifyJWT = (req, res, next) => {
-  const token = req.headers["x-access-token"];
+  const token = req.headers["token"];
   if (!token) {
     res.send("We need token to authenticate");
   } else {
+    console.log("token received from frontend: ", token);
     // validating token
     jwt.verify(token, secretKey, (err, decoded) => {
       if (err) {
@@ -150,10 +151,10 @@ app.post("/login", (req, res) => {
             if (bcryptResult) {
               const id = result[0].userId;
               const token = jwt.sign({ id }, secretKey, {
-                expiresIn: "300",
+                expiresIn: 300,
               });
-              req.session.user = result;
-              console.log("req.session.user: ", req?.session?.user);
+              // req.session.user = result;
+              // console.log("req.session.user: ", req?.session?.user);
               console.log("password matches");
               res.json({
                 auth: true,
