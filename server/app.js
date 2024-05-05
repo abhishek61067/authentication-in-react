@@ -58,6 +58,7 @@ app.use(session(sessionOption));
 
 // we need to use express.json() in order to work with object passed from frontend in route handler
 app.use(express.json());
+
 const mysql = require("mysql");
 
 const port = 3000;
@@ -131,48 +132,58 @@ app.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
   // selecting from table in database
-  db.query(
-    "SELECT * FROM users WHERE  username=?",
-    username,
-    (error, result) => {
-      // if there is a database error
-      if (error) {
-        res.json({ auth: false, err: error });
-      }
+  try {
+    db.query(
+      "SELECT * FROM users WHERE  username=?",
+      username,
+      (error, result) => {
+        // if there is a database error
 
-      // if user is found
-      if (result.length > 0) {
-        // compare passwords
-        bcrypt.compare(
-          password,
-          result[0].password,
-          function (err, bcryptResult) {
-            // result == true
-            if (bcryptResult) {
-              const id = result[0].userId;
-              const token = jwt.sign({ id }, secretKey, {
-                expiresIn: 300,
-              });
-              req.session.user = result;
-              console.log("req.session.user: ", req?.session?.user);
-              console.log("password matches");
-              res.json({
-                auth: true,
-                token,
-                result,
-              });
-            } else {
-              res.json({ auth: false, message: "wrong password" });
+        if (error) {
+          res.status(500).json({ auth: false, error });
+          return;
+        }
+        // if user is found
+        if (result?.length > 0) {
+          // compare passwords
+          bcrypt.compare(
+            password,
+            result[0].password,
+            function (err, bcryptResult) {
+              // result == true
+              if (bcryptResult) {
+                const id = result[0].userId;
+                const token = jwt.sign({ id }, secretKey, {
+                  expiresIn: 300,
+                });
+                req.session.user = result;
+                console.log("req.session.user: ", req?.session?.user);
+                console.log("password matches");
+                res.status(200).json({
+                  auth: true,
+                  token,
+                  result,
+                });
+                return;
+              } else {
+                res
+                  .status(400)
+                  .json({ auth: false, message: "wrong password" });
+                return;
+              }
             }
-          }
-        );
+          );
+        }
+        // if no user found with given credentials
+        else {
+          res.status(400).json({ auth: false, message: "Username dont exist" });
+        }
       }
-      // if no user found with given credentials
-      else {
-        res.json({ auth: false, message: "Username dont exist" });
-      }
-    }
-  );
+    );
+  } catch (e) {
+    console.error(`Error in loginUser ${e}`);
+    res.status(500).json({ error: e });
+  }
 });
 
 app.listen(port, () => {
