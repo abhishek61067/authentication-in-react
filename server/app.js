@@ -10,9 +10,6 @@ const { verifyJWT } = require("./utils/auth/JWT");
 // configuration for dotenv
 require("dotenv").config();
 
-const tokenSecret = process.env.SECRET_KEY;
-console.log("token secret: ", tokenSecret);
-
 //secret key
 const secretKey = "jwtsecret";
 // bcrypt setup
