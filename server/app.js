@@ -1,9 +1,17 @@
+const { createToken } = require("./utils/auth/JWT");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const jwt = require("jsonwebtoken");
+const { verifyJWT } = require("./utils/auth/JWT");
+
+// configuration for dotenv
+require("dotenv").config();
+
+const tokenSecret = process.env.SECRET_KEY;
+console.log("token secret: ", tokenSecret);
 
 //secret key
 const secretKey = "jwtsecret";
@@ -93,26 +101,6 @@ app.post("/register", (req, res) => {
   });
 });
 
-// verifying jwt
-const verifyJWT = (req, res, next) => {
-  const token = req.headers["token"];
-  if (!token) {
-    res.send("We need token to authenticate");
-  } else {
-    console.log("token received from frontend: ", token);
-    // validating token
-    jwt.verify(token, secretKey, (err, decoded) => {
-      if (err) {
-        res.json({ auth: false, message: "Invalid token" });
-      } else {
-        console.log("token validated");
-        req.userId = decoded.id;
-        next();
-      }
-    });
-  }
-};
-
 // route handler to check if user is authenticated using JWT
 app.get("/isAuth", verifyJWT, (req, res) => {
   res.send("User Authenticated");
@@ -152,16 +140,15 @@ app.post("/login", (req, res) => {
             function (err, bcryptResult) {
               // result == true
               if (bcryptResult) {
-                const id = result[0].userId;
-                const token = jwt.sign({ id }, secretKey, {
-                  expiresIn: 300,
+                const user = result[0];
+                const accessToken = createToken(user);
+                // store the user data in session
+                res.cookie("accesstoken", accessToken, {
+                  maxAge: 1000 * 60 * 10, // 10 minute
                 });
-                req.session.user = result;
-                console.log("req.session.user: ", req?.session?.user);
-                console.log("password matches");
                 res.status(200).json({
                   auth: true,
-                  token,
+                  accessToken,
                   result,
                 });
                 return;
