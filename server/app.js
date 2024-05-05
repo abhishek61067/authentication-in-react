@@ -99,6 +99,7 @@ app.post("/register", (req, res) => {
 });
 
 // route handler to check if user is authenticated using JWT
+// protected route
 app.get("/isAuth", verifyJWT, (req, res) => {
   res.send("User Authenticated");
 });
